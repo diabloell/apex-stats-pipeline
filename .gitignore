@@ -1,0 +1,10 @@
+.idea/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+
+data/*.json
+templates/*.psd
+output/
