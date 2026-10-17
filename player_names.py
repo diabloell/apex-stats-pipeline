@@ -46,6 +46,7 @@ LAN_ROSTERS = {
 }
 
 EXTRA_ALIASES = {
+    "Zachmazer": ("VSN Zachmazer",),
     "Effect": ("AURORA Effect", "xEffect"),
     "ojrein": ("AURORA ojrein",),
     "kazakh": ("AURORA_Kazakh", "AURORA Kazakh"),

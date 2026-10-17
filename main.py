@@ -8,7 +8,7 @@ from stats import normalize_day
 
 ROOT = Path(__file__).resolve().parent
 
-def prepare_data(source, als_url=None, fast=False):
+def prepare_data(source, als_url=None, fast=False, match_number=None):
     if source == "eternal":
         path = ROOT / "data" / "scores.json"
         if not path.is_file():
@@ -18,12 +18,22 @@ def prepare_data(source, als_url=None, fast=False):
     if not als_url:
         raise ValueError("Provide --als-url with a specific ALGS stage page")
     from als_parser import get_als_results
-    return get_als_results(als_url, fetch_players=not fast)
+    return get_als_results(als_url, fetch_players=not fast, selected_game=match_number)
 
 def build_jobs(source="eternal", match_number=5, event="ALGS CHAMPIONSHIP 2025",
                job_type="both", als_url=None, fast=False):
-    data = prepare_data(source, als_url=als_url, fast=fast)
+
+    data = prepare_data(source, als_url=als_url, fast=fast,
+                        match_number=match_number if source == "als" and job_type in {"mvp", "both"} else None)
+
+    if source == "als":
+        if data.get("tournament_name"):
+            event = data["tournament_name"].split(" - Year", 1)[0]
+        else:
+            data["warnings"].append("Название турнира не найдено. Использован ручной ввод.")
+
     jobs = []
+
     if job_type in {"both", "table"}:
         jobs.append(export_table(data, event))
     if job_type in {"both", "mvp"}:

@@ -12,6 +12,19 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; ApexStatsPipeline/1.0)"}
 def _number(value):
     return int(re.sub(r"[^\d-]", "", str(value)))
 
+
+def extract_tournament_name(html):
+    soup = BeautifulSoup(html, "html.parser")
+
+    for tag in soup.select("a, h1, h2, h3"):
+        name = " ".join(tag.get_text(" ", strip=True).split())
+
+        if re.fullmatch(r".{3,80}\s+-\s+Year\s+\d+(?:,\s*Split\s+\d+)?", name, re.I):
+            return name
+
+    return None
+
+
 def parse_score_matrix(html):
     soup = BeautifulSoup(html, "html.parser")
     table = soup.select_one("table.score-matrix_table")
@@ -152,7 +165,54 @@ def parse_game_players(html, legends=None):
         raise ValueError("No player statistics were extracted from ALS game page.")
     return result
 
-def get_als_results(stage_url, fetch_players=True, timeout=25):
+def check_match_teams(match, number):
+    teams = match["teams"]
+    if len(teams) != 20:
+        raise ValueError(f"Матч №{number} ещё не готов: результатов команд {len(teams)}/20. Попробуй позже.")
+    positions = [team["placement"] for team in teams]
+    if sorted(positions) != list(range(1, 21)):
+        raise ValueError(f"Матч №{number}: места команд ещё не согласованы на ALS. Попробуй позже.")
+    if len({team["name"].casefold() for team in teams}) != 20:
+        raise ValueError(f"Матч №{number}: в таблице повторяются названия команд.")
+
+
+def check_match_players(match, number):
+    players = match["players"]
+    if len(players) != 60:
+        raise ValueError(f"Матч №{number}: статистика игроков ещё не готова ({len(players)}/60). Попробуй позже.")
+
+    teams = {team["name"].casefold(): team for team in match["teams"]}
+    counts = {name: 0 for name in teams}
+    kills = {name: 0 for name in teams}
+    unique_players = set()
+
+    for player in players:
+        name = player["name"].casefold()
+        team = player["team"].casefold()
+        key = (team, name)
+        if key in unique_players:
+            raise ValueError(f"Матч №{number}: дублируется игрок {player['name']}.")
+        unique_players.add(key)
+        if team not in teams or player["placement"] != teams[team]["placement"]:
+            raise ValueError(f"Матч №{number}: команда игрока {player['name']} не совпадает с таблицей.")
+        if not player["legend"]:
+            raise ValueError(f"Матч №{number}: для игрока {player['name']} ещё нет легенды.")
+        if player["kills"] < 0 or player["damage"] < 0:
+            raise ValueError(f"Матч №{number}: некорректная статистика игрока {player['name']}.")
+        counts[team] += 1
+        kills[team] += player["kills"]
+
+    for name, team in teams.items():
+        if counts[name] != 3:
+            raise ValueError(f"Матч №{number}: у команды {team['name']} игроков {counts[name]}/3.")
+        if kills[name] != team["kills"]:
+            raise ValueError(
+                f"Матч №{number}: убийства {team['name']} не совпадают: "
+                f"игроки {kills[name]}, таблица {team['kills']}. Попробуй позже."
+            )
+
+
+def get_als_results(stage_url, fetch_players=True, timeout=25, selected_game=None):
     parsed = urlparse(stage_url)
     if parsed.scheme not in {"https", "http"} or parsed.hostname not in {
         "apexlegendsstatus.com", "www.apexlegendsstatus.com", "mirg.apexlegendsstatus.com"
@@ -162,17 +222,29 @@ def get_als_results(stage_url, fetch_players=True, timeout=25):
     session = requests.Session()
     session.headers.update(HEADERS)
 
+
     def get(url):
         response = session.get(url, timeout=timeout)
         response.raise_for_status()
         return response.text
 
+
     stage_html = get(stage_url)
     day = parse_score_matrix(stage_html)
+    if selected_game is not None:
+        if not 1 <= selected_game <= len(day["matches"]):
+            raise ValueError(f"Матч №{selected_game} ещё не появился в таблице ALS. Попробуй позже.")
+        check_match_teams(day["matches"][selected_game - 1], selected_game)
+    day["tournament_name"] = extract_tournament_name(stage_html)
     links = parse_game_links(stage_html, stage_url)
+
     for index, match in enumerate(day["matches"], start=1):
+        if selected_game is not None and index != selected_game:
+            continue
         info = links.get(index)
         if not info:
+            if selected_game is not None:
+                raise ValueError(f"Матч №{index}: ссылка на статистику пока не появилась. Попробуй позже.")
             day["warnings"].append(f"Game {index}: detail page link not found")
             continue
         match["id"] = info["url"].rsplit("/", 1)[-1]
@@ -187,6 +259,8 @@ def get_als_results(stage_url, fetch_players=True, timeout=25):
             for player in players:
                 player["placement"] = placement_by_team.get(player["team"].casefold())
             match["players"] = players
+            if selected_game is not None:
+                check_match_players(match, index)
             unmatched = sum(1 for p in players if p["placement"] is None)
             if unmatched:
                 day["warnings"].append(f"Game {index}: {unmatched} players with unmatched team names")
@@ -194,5 +268,9 @@ def get_als_results(stage_url, fetch_players=True, timeout=25):
             if missing_legends:
                 day["warnings"].append(f"Game {index}: legends missing for {missing_legends} players")
         except (requests.RequestException, ValueError) as exc:
+            if selected_game is not None:
+                raise ValueError(f"Матч №{index}: статистика ещё не готова. {exc}") from exc
             day["warnings"].append(f"Game {index}: individual statistics unavailable: {exc}")
+    if selected_game is not None:
+        day["ready_match"] = selected_game
     return day

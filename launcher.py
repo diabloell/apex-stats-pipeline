@@ -56,11 +56,14 @@ class Launcher:
         choices = ttk.Combobox(frame, textvariable=self.source, width=36, state="readonly",
                                values=("eternal", "als"))
         choices.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(2, 10))
+        choices.bind("<<ComboboxSelected>>", lambda event: self.update_event_field())
 
         ttk.Label(frame, text="Ссылка ALS на конкретную серию (только для als)").grid(row=2, column=0, columnspan=2, sticky="w")
         ttk.Entry(frame, textvariable=self.als_url, width=68).grid(row=3, column=0, columnspan=2, sticky="ew", pady=(2, 10))
-        ttk.Label(frame, text="Название турнира").grid(row=4, column=0, sticky="w")
-        ttk.Entry(frame, textvariable=self.event, width=48).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(2, 10))
+        self.event_label = ttk.Label(frame, text="Название турнира (для Eternal)")
+        self.event_label.grid(row=4, column=0, sticky="w")
+        self.event_entry = ttk.Entry(frame, textvariable=self.event, width=48)
+        self.event_entry.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(2, 10))
 
         ttk.Label(frame, text="Тип поста").grid(row=6, column=0, sticky="w")
         ttk.Combobox(frame, textvariable=self.job_type, values=("table", "mvp"),
@@ -75,6 +78,15 @@ class Launcher:
         self.button.grid(row=9, column=0, columnspan=2, sticky="ew", ipady=7)
         ttk.Label(frame, textvariable=self.status, wraplength=500).grid(
             row=10, column=0, columnspan=2, sticky="w", pady=(14, 0))
+        self.update_event_field()
+
+    def update_event_field(self):
+        if self.source.get() == "als":
+            self.event_label.grid_remove()
+            self.event_entry.grid_remove()
+        else:
+            self.event_label.grid()
+            self.event_entry.grid()
 
     def run(self):
         try:
@@ -101,7 +113,9 @@ class Launcher:
             warnings = data.get("warnings", [])
             note = "\n".join("• " + x for x in warnings[:7])
             if auto:
-                self._set_status("JSON создан. Запускаю Photoshop...")
+                self._set_status(
+                    f"Матч №{match_num}: статистика готова (20 команд, 60 игроков). Запускаю Photoshop..."
+                    if data.get("ready_match") else "JSON создан. Запускаю Photoshop...")
                 try:
                     for job in jobs:
                         launch_photoshop(job)
@@ -115,7 +129,10 @@ class Launcher:
                                + ".\nВ Photoshop: Файл → Сценарии → Обзор → "
                                "photoshop/fill_from_json.jsx.\n" + note)
         except Exception as exc:
-            self._finished("Ошибка: " + str(exc))
+            if source == "als" and job_type == "mvp" and isinstance(exc, ValueError) and str(exc).startswith("Матч №"):
+                self._finished("Ожидание статистики ALS: " + str(exc))
+            else:
+                self._finished("Ошибка: " + str(exc))
 
     def _set_status(self, text):
         self.root.after(0, lambda: self.status.set(text))
