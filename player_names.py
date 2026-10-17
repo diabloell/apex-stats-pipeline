@@ -1,6 +1,5 @@
-
 LAN_ROSTERS = {
-    # Group A
+
     "ZETA DIVISION": ("YukaF", "Mike", "Satuki"),
     "Alliance": ("Hakis", "unlucky", "akku"),
     "VK Gaming": ("Kasssa", "JR", "Noname"),
@@ -11,7 +10,7 @@ LAN_ROSTERS = {
     "LawsonTicketXone": ("5CG", "wqtagashi", "Right"),
     "NOEZ FOXX": ("MiaK", "gavomk", "kakigoori7"),
     "Forged Wolves Gaming": ("DIGVIBEZZ", "Dark", "kaydnw"),
-    # Group B
+
     "Wolves Esports": ("WenXx", "CrazyCong", "QQ"),
     "Team Falcons": ("ImperialHal", "Wxltzy", "Gild"),
     "REJECT": ("4rufa", "Euriece", "Axis"),
@@ -22,7 +21,7 @@ LAN_ROSTERS = {
     "Daylight Savings": ("Lymo", "Heckk", "Walking L"),
     "SSS": ("sweetdreams", "Slayr", "sacred"),
     "VexX Gaming": ("Crook", "Misterosey", "Enemy"),
-    # Group C
+
     "Team Vision": ("Zach", "LOTR31", "Carter"),
     "Rex Regum Qeon": ("StrafingFlame", "Prycyy", "EzFlash"),
     "BANDITS": ("lighT", "KIND4", "iHenchman"),
@@ -33,7 +32,7 @@ LAN_ROSTERS = {
     "Crazy Thieves": ("Phony", "Genburten", "Koyful"),
     "DINOS": ("JFuture", "ChaosFeelings", "Dj"),
     "Nice Guys": ("oh Nocturnal", "Cody", "Jukezy"),
-    # Group D
+
     "Aurora Gaming": ("kazakh", "ojrein", "Effect"),
     "UNLIMIT": ("Xtsuvi", "Yulariman", "Peace"),
     "Ninjas in Pyjamas": ("Vein", "Cole", "Kurev"),
@@ -45,7 +44,6 @@ LAN_ROSTERS = {
     "Shopify Rebellion": ("sauceror", "Xynew", "zap"),
     "World Wide": ("Emtee", "Vaxlon", "Nait"),
 }
-
 
 EXTRA_ALIASES = {
     "Effect": ("AURORA Effect", "xEffect"),
@@ -114,16 +112,13 @@ UNVERIFIED_GAME_NAMES = {
     "absolutegodplayr": "Team WaR: identity not confirmed",
 }
 
-
 TEAM_ONLY_ALIASES = {
     ("z", "team liquid"): "Zer0",
 }
 
-
 def _normalize(value):
 
     return " ".join(value.strip().split()).casefold()
-
 
 PLAYER_ALIASES = {
     name: [name]
@@ -144,14 +139,12 @@ for official, aliases in PLAYER_ALIASES.items():
             raise ValueError(f"Ambiguous alias {alias!r}: {previous!r} vs {official!r}")
         _ALIAS_INDEX[key] = official
 
-
 TEAM_TAGS = {
     "aurora", "aur", "all", "alliance", "100t", "crt", "flcn", "falc",
     "fwg", "ffun", "gk", "gg", "kn", "ltx", "nfx", "nrg", "rc",
     "dcg", "sen", "sr", "tl", "war", "unl", "vexx", "ss",
     "zeta", "rrq", "e36", "pxx", "nip", "agg", "wgr",
 }
-
 
 def get_official_name(game_name, team=None):
 
@@ -171,7 +164,6 @@ def get_official_name(game_name, team=None):
                 return _ALIAS_INDEX[remainder]
     return game_name
 
-
 def is_known_name(game_name, team=None):
     key = _normalize(game_name)
     if key in _ALIAS_INDEX or bool(team and (key, _normalize(team)) in TEAM_ONLY_ALIASES):
@@ -182,7 +174,6 @@ def is_known_name(game_name, team=None):
             if tag in TEAM_TAGS and remainder in _ALIAS_INDEX:
                 return True
     return False
-
 
 def find_unknown_game_names(data):
     unknown = set()

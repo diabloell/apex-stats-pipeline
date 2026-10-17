@@ -1,8 +1,6 @@
-"""Prepare Photoshop jobs as JSON; never touch fonts or PSD layers in Python."""
-
 import json
 from pathlib import Path
-from player_names import get_official_name, find_unknown_game_names
+from player_names import get_official_name
 from stats import (
     calculate_day, get_standings, get_match_mvp_data,
     match_kills, match_placements, match_scores,
@@ -12,16 +10,13 @@ from stats import (
 ROOT = Path(__file__).resolve().parent
 EXPORT_DIR = ROOT / "output" / "photoshop"
 
-
 def write_job(filename, payload):
     EXPORT_DIR.mkdir(parents=True, exist_ok=True)
     destination = EXPORT_DIR / filename
     destination.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return destination
 
-
 def find_photo(official_name):
-    """Use the friend's preformatted player portraits, never resize in Python."""
     folder = ROOT / "assets" / "players"
     if not folder.is_dir():
         return None
@@ -30,7 +25,6 @@ def find_photo(official_name):
             if path.stem.casefold() == official_name.casefold():
                 return path
     return None
-
 
 def export_table(data, event_name):
     day_points = calculate_day(data)
@@ -41,10 +35,18 @@ def export_table(data, event_name):
         tiebreaker_scores(match_kills(data)),
     )
     kills = match_kills(data)
-    rows = [
-        {"position": position, "team": team, "kills": sum(kills[team]), "points": points}
-        for position, (team, points) in enumerate(standings[:20], start=1)
-    ]
+    if data.get("source") == "als" and data.get("site_standings"):
+
+        rows = [
+            {"position": row["position"], "team": row["team"],
+             "kills": sum(kills.get(row["team"], [])), "points": row["points"]}
+            for row in data["site_standings"][:20]
+        ]
+    else:
+        rows = [
+            {"position": position, "team": team, "kills": sum(kills[team]), "points": points}
+            for position, (team, points) in enumerate(standings[:20], start=1)
+        ]
     payload = {
         "type": "table",
         "event_name": event_name,
@@ -54,7 +56,6 @@ def export_table(data, event_name):
         "rows": rows,
     }
     return write_job("table.json", payload)
-
 
 def export_mvp(data, match_number, event_name):
     if not 1 <= match_number <= len(data["matches"]):
@@ -74,7 +75,8 @@ def export_mvp(data, match_number, event_name):
 
     if not players:
         raise ValueError("The selected match has no players")
-    mvp_photo = find_photo(players[0]["name"])
+
+    mvp_photo = None
     payload = {
         "type": "match_mvp",
         "event_name": event_name,
@@ -84,8 +86,6 @@ def export_mvp(data, match_number, event_name):
         "output_png": f"output/photoshop/mvp_match_{match_number}.png",
         "players": players,
         "mvp_photo": mvp_photo.relative_to(ROOT).as_posix() if mvp_photo else None,
-        # In this workflow a final CIS MVP post requires a prepared player photo.
-        # A JSON job without a photo is only a test/draft and not publication-ready.
-        "publication_ready": bool(mvp_photo),
+        "publication_ready": False,
     }
     return write_job(f"mvp_match_{match_number}.json", payload), bool(mvp_photo)

@@ -1,5 +1,3 @@
-"""ALGS scoring, match and player statistics. No graphics dependencies."""
-
 placement_points = {
     1: 12,
     2: 9,
@@ -23,23 +21,23 @@ placement_points = {
     20: 0
 }
 
-
 def team_kills(match):
-    team_kills = {}
+
+    if match.get("teams"):
+        return {team["name"]: team["kills"] for team in match["teams"]}
+    kills = {}
     for player in match["players"]:
         team_name = player["team"]
-        team_kills[team_name] = team_kills.get(team_name, 0) + player["kills"]
-    return team_kills
-
+        kills[team_name] = kills.get(team_name, 0) + player["kills"]
+    return kills
 
 def team_placements(match):
-    team_placements = {}
+    if match.get("teams"):
+        return {team["name"]: team["placement"] for team in match["teams"]}
+    placements = {}
     for player in match["players"]:
-        team_placement = player["placement"]
-        team_name = player["team"]
-        team_placements[team_name] = team_placement
-    return team_placements
-
+        placements[player["team"]] = player["placement"]
+    return placements
 
 def calculate_points(match):
     team_points = {}
@@ -51,7 +49,6 @@ def calculate_points(match):
 
     return team_points
 
-
 def calculate_day(data):
     day_points = {}
 
@@ -62,7 +59,6 @@ def calculate_day(data):
 
     return day_points
 
-
 def match_scores(data):
     day_points = {}
 
@@ -72,13 +68,11 @@ def match_scores(data):
             day_points.setdefault(team_name, []).append(points)
     return day_points
 
-
 def tiebreaker_scores(data):
     sorted_scores = {}
     for team, scores in data.items():
         sorted_scores[team] = sorted(scores, reverse=True)
     return sorted_scores
-
 
 def get_standings(day_points, tie_scores, tie_placements, tie_kills):
     standings = sorted(
@@ -93,7 +87,6 @@ def get_standings(day_points, tie_scores, tie_placements, tie_kills):
     )
     return standings
 
-
 def match_placements(data):
     placements = {}
     for match in data["matches"]:
@@ -103,13 +96,11 @@ def match_placements(data):
             placements.setdefault(team_name, []).append(placement)
     return placements
 
-
 def tiebreaker_placements(data):
     sorted_placements = {}
     for team, placement in data.items():
         sorted_placements[team] = sorted(placement)
     return sorted_placements
-
 
 def match_kills(data):
     kills = {}
@@ -119,7 +110,6 @@ def match_kills(data):
         for team_name, kill in cur_match.items():
             kills.setdefault(team_name, []).append(kill)
     return kills
-
 
 def match_point_eligible(data, threshold=50):
     total_points = {}
@@ -134,7 +124,6 @@ def match_point_eligible(data, threshold=50):
                 eligible_after[team_name] = match_number
     return eligible_after
 
-
 def match_point_winner(data, threshold=50):
     eligible_after = match_point_eligible(data, threshold)
 
@@ -148,7 +137,6 @@ def match_point_winner(data, threshold=50):
 
     return None
 
-
 def normalize_player(player):
     return {
         "name": player["player_name"],
@@ -158,7 +146,6 @@ def normalize_player(player):
         "damage": player["damage_dealt"],
         "legend": player["character_name"]
     }
-
 
 def normalize_match(match):
     players = []
@@ -172,7 +159,6 @@ def normalize_match(match):
         "start_time": match["match_start"],
         "players": players}
 
-
 def normalize_day(data):
     matches = []
 
@@ -181,10 +167,8 @@ def normalize_day(data):
 
     return {"matches": matches}
 
-
 def get_top_players(match):
     return sorted(match["players"], key=lambda x: (x["kills"], x["damage"]), reverse=True)
-
 
 def player_day_stats(data):
     players = {}
@@ -201,18 +185,15 @@ def player_day_stats(data):
 
     return players
 
-
 def get_top_day_players(data):
     day_stats = player_day_stats(data)
     day_stats = sorted(day_stats.items(), key=lambda x: (x[1]["kills"], x[1]["damage"]), reverse=True)
     return day_stats
 
-
 def get_match_mvp_data(match, match_number):
     top_players = get_top_players(match)[:3]
-
-    return {
-        "match_number": match_number,
-        "mvp": top_players[0],
-        "top_players": top_players
-    }
+    if len(top_players) < 3:
+        raise ValueError(f"Match {match_number} lacks individual player stats for MVP")
+    if any(not player.get("legend") for player in top_players):
+        raise ValueError(f"Match {match_number} lacks legend data for an MVP player")
+    return {"match_number": match_number, "mvp": top_players[0], "top_players": top_players}

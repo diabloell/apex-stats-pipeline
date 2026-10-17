@@ -15,7 +15,7 @@ from zipfile import ZipFile, BadZipFile
 ROOT = Path(__file__).resolve().parent
 DESTINATION = ROOT / "assets" / "fonts" / "photoshop_install"
 
-# Названия сверены с содержимым архива «Шрифты и градиенты.zip».
+
 FONT_FILES = {
     "Druk-Medium-Trial.otf": "Таблица: большой заголовок (DrukTrial-Medium)",
     "steelfish rg.ttf": "MVP: большой MATCH 5 (SteelfishRg-Regular)",
@@ -56,7 +56,7 @@ def main():
 
     try:
         with ZipFile(archive) as zipped:
-            # Ищем по имени файла, независимо от вложенных папок в архиве.
+
             by_name = {}
             for member in zipped.infolist():
                 if member.is_dir():

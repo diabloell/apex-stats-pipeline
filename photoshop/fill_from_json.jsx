@@ -1,12 +1,5 @@
 ﻿#target photoshop
-/*
- * Photoshop ExtendScript: edit original PSD text layers and smart objects.
- * Run: File > Scripts > Browse..., then select output/photoshop/*.json.
- * Original PSDs are opened as templates and closed WITHOUT being saved.
- * This uses actual layer/group names found in the supplied PSD templates.
- */
 (function () {
-    // ExtendScript versions that lack JSON.parse: validate a JSON literal before eval.
     function parseJob(source) {
         if (typeof JSON !== "undefined" && typeof JSON.parse === "function") {
             return JSON.parse(source);
@@ -21,7 +14,6 @@
 
     function fileFromProject(projectFolder, path) {
         if (!path) { return null; }
-        // Job filenames are relative to the project, so moving the project is safe.
         var normalized = String(path).replace(/\\/g, "/");
         if (/^(?:[A-Za-z]:\/|\/)/.test(normalized)) { return new File(normalized); }
         return new File(projectFolder.fsName + "/" + normalized);
@@ -95,7 +87,6 @@
         var statsGroup = childGroup(card, "Статы на белом фоне");
         var numericTexts = textLayers(statsGroup);
         if (numericTexts.length !== 2) { throw new Error("Expected 2 stat layers in " + card.name); }
-        // Left number is kills; right number is damage.
         numericTexts.sort(function (a, b) {
             return a.bounds[0].as("px") - b.bounds[0].as("px");
         });
@@ -112,7 +103,6 @@
         return str + result;
     }
 
-    // Key = Eternal Esports character name; value = exact art layer name from PSD.
     var LEGENDS = {
         "alter":"Альтер", "ash":"Эш", "bangalore":"Бангалор",
         "ballistic":"Баллистик", "bloodhound":"Бладхаунд",
@@ -146,7 +136,6 @@
 
     function hideOriginalTeamLogo(card) {
         var group = childGroup(card, "Лого команды");
-        // Keep the original rectangle, hide only the old Falcons smart object.
         for (var i = 0; i < group.artLayers.length; i++) {
             var layer = group.artLayers[i];
             if (layer.name !== "Прямоугольник 3") { layer.visible = false; }
@@ -232,7 +221,6 @@
             setText(killsTexts[0], rank.kills);
             setText(pointsTexts[0], rank.points);
         }
-        // Event header: only touch the actual source text layer, not its formatting.
         var header = textLayerByNameDeep(doc, "ALGS CHAMPIONSHIP 2025");
         if (header && job.event_name) { setText(header, job.event_name); }
     }
@@ -268,7 +256,6 @@
         if (job.type !== "table" && job.type !== "match_mvp") {
             throw new Error("Unknown job type: " + job.type);
         }
-        // JSON lives at <project>/output/photoshop/<job>.json.
         var projectFolder = file.parent.parent.parent;
         var source = fileFromProject(projectFolder, job.template_psd);
         if (!source.exists) { throw new Error("Original PSD not found: " + source.fsName); }
