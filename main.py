@@ -28,18 +28,17 @@ placement_points = {
 
 def team_kills(match):
     team_kills = {}
-    for player in match["data"]:
-        team_name = player["team_name"]
+    for player in match["players"]:
+        team_name = player["team"]
         team_kills[team_name] = team_kills.get(team_name, 0) + player["kills"]
-
     return team_kills
 
 
 def team_placements(match):
     team_placements = {}
-    for team in match["data"]:
-        team_placement = team["team_placement"]
-        team_name = team["team_name"]
+    for player in match["players"]:
+        team_placement = player["placement"]
+        team_name = player["team"]
         team_placements[team_name] = team_placement
     return team_placements
 
@@ -82,6 +81,7 @@ def tiebreaker_scores(data):
         sorted_scores[team] = sorted(scores, reverse=True)
     return sorted_scores
 
+
 def get_standings(day_points, tie_scores, tie_placements, tie_kills):
     standings = sorted(
         day_points.items(),
@@ -112,6 +112,7 @@ def tiebreaker_placements(data):
         sorted_placements[team] = sorted(placement)
     return sorted_placements
 
+
 def match_kills(data):
     kills = {}
     for match in data["matches"]:
@@ -136,8 +137,6 @@ def match_point_eligible(data, threshold=50):
     return eligible_after
 
 
-
-
 def match_point_winner(data, threshold=50):
     eligible_after = match_point_eligible(data, threshold)
 
@@ -151,6 +150,40 @@ def match_point_winner(data, threshold=50):
 
     return None
 
+
+def normalize_player(player):
+    return {
+        "name": player["player_name"],
+        "team": player["team_name"],
+        "placement": player["team_placement"],
+        "kills": player["kills"],
+        "damage": player["damage_dealt"],
+        "legend": player["character_name"]
+    }
+
+
+def normalize_match(match):
+    players = []
+
+    for player in match["data"]:
+        players.append(normalize_player(player))
+
+    return {
+        "id": match["mid"],
+        "map": match["map_name"],
+        "start_time": match["match_start"],
+        "players": players}
+
+
+def normalize_day(data):
+    matches = []
+
+    for match in data["matches"]:
+        matches.append(normalize_match(match))
+
+    return {"matches": matches}
+
+data = normalize_day(data)
 day_points = calculate_day(data)
 tie_scores = tiebreaker_scores(match_scores(data))
 tie_placements = tiebreaker_placements(match_placements(data))
@@ -161,3 +194,13 @@ standings = get_standings(day_points, tie_scores, tie_placements, tie_kills)
 print(standings)
 print(match_point_eligible(data))
 print(match_point_winner(data))
+print(data["matches"][0]["players"][0])
+
+kills_by_match = match_kills(data)
+
+print("POS | TEAM                      | PTS | KILLS")
+
+for position, (team, points) in enumerate(standings, start=1):
+    kills = sum(kills_by_match[team])
+    print(f"{position:>3} | {team:<25} | {points:>3} | {kills:>5}")
+
