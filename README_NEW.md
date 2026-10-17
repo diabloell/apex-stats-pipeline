@@ -1,4 +1,4 @@
-# Apex Stats Pipeline - следующий шаг
+# Apex Stats Pipeline
 
 Это **предварительная сборка** удобного запуска и адаптера Apex Legends Status.
 Рабочие `main.py`, `stats.py`, `export_photoshop.py`, `player_names.py` и
@@ -33,7 +33,7 @@
 Если `players-stats` отсутствует или легенда не установлена, генерация MVP должна
 завершиться ошибкой, не подставляя вымышленные цифры.
 
-## Два источника, одни расчёты
+## Расчёты
 
 `main.py --source eternal` - прежний локальный Eternal Esports JSON.
 
