@@ -1,4 +1,4 @@
-# Apex Stats Pipeline — следующий шаг
+# Apex Stats Pipeline - следующий шаг
 
 Это **предварительная сборка** удобного запуска и адаптера Apex Legends Status.
 Рабочие `main.py`, `stats.py`, `export_photoshop.py`, `player_names.py` и
@@ -24,9 +24,9 @@
 а **не** `Overview`, где смешаны этапы турнира.
 
 Парсер делает две независимые вещи:
-- читает командные места и киллы из `score-matrix_table` — для турнирной таблицы;
+- читает командные места и киллы из `score-matrix_table` - для турнирной таблицы;
 - открывает каждый `View game stats` и читает `players-stats`, включая убийства/урон, а также
-  пытается получить легенды из `showLobbyLayout` на странице серии — для MVP.
+  пытается получить легенды из `showLobbyLayout` на странице серии - для MVP.
 
 Проверка на реальных страницах **конкретного LAN турнира** ещё обязательна. Нельзя
 публиковать MVP без проверки легенд и соответствия игрового ника.
@@ -35,11 +35,11 @@
 
 ## Два источника, одни расчёты
 
-`main.py --source eternal` — прежний локальный Eternal Esports JSON.
+`main.py --source eternal` - прежний локальный Eternal Esports JSON.
 
-`main.py --source als --als-url <stage-url> --job table` — таблица ALS.
+`main.py --source als --als-url <stage-url> --job table` - таблица ALS.
 
-`main.py --source als --als-url <stage-url> --job mvp --match 3` — MVP ALS, после проверки персональных данных.
+`main.py --source als --als-url <stage-url> --job mvp --match 3` - MVP ALS, после проверки персональных данных.
 
 Фотография и логотипы на MVP всегда добавляются вручную в Photoshop.
 
