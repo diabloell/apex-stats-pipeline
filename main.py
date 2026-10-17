@@ -1,4 +1,5 @@
 import json
+from render_table import render_table
 
 with open("data/scores.json", encoding="utf-8") as file:
     data = json.load(file)
@@ -191,6 +192,8 @@ tie_kills = tiebreaker_scores(match_kills(data))
 
 standings = get_standings(day_points, tie_scores, tie_placements, tie_kills)
 
+
+
 print(standings)
 print(match_point_eligible(data))
 print(match_point_winner(data))
@@ -204,3 +207,11 @@ for position, (team, points) in enumerate(standings, start=1):
     kills = sum(kills_by_match[team])
     print(f"{position:>3} | {team:<25} | {points:>3} | {kills:>5}")
 
+render_table(
+    standings=standings,
+    kills_by_match=match_kills(data),
+    template_path="templates/table_blank.png",
+    output_path="output/table_full.png"
+)
+
+print("Saved: output/table_full.png")
