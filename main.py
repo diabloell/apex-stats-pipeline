@@ -1,5 +1,6 @@
 import json
 from render_table import render_table
+from render_match_mvp import render_match_mvp
 
 with open("data/scores.json", encoding="utf-8") as file:
     data = json.load(file)
@@ -184,6 +185,43 @@ def normalize_day(data):
 
     return {"matches": matches}
 
+
+def get_top_players(match):
+    return sorted(match["players"], key=lambda x: (x["kills"], x["damage"]), reverse=True)
+
+
+def player_day_stats(data):
+    players = {}
+
+    for match in data["matches"]:
+        for player in match["players"]:
+            players.setdefault(player["name"], {
+                "team": player["team"],
+                "kills": 0,
+                "damage": 0
+            })
+            players[player["name"]]["kills"] += player["kills"]
+            players[player["name"]]["damage"] += player["damage"]
+
+    return players
+
+
+def get_top_day_players(data):
+    day_stats = player_day_stats(data)
+    day_stats = sorted(day_stats.items(), key=lambda x: (x[1]["kills"], x[1]["damage"]), reverse=True)
+    return day_stats
+
+
+def get_match_mvp_data(match, match_number):
+    top_players = get_top_players(match)[:3]
+
+    return {
+        "match_number": match_number,
+        "mvp": top_players[0],
+        "top_players": top_players
+    }
+
+
 data = normalize_day(data)
 day_points = calculate_day(data)
 tie_scores = tiebreaker_scores(match_scores(data))
@@ -191,8 +229,6 @@ tie_placements = tiebreaker_placements(match_placements(data))
 tie_kills = tiebreaker_scores(match_kills(data))
 
 standings = get_standings(day_points, tie_scores, tie_placements, tie_kills)
-
-
 
 print(standings)
 print(match_point_eligible(data))
@@ -215,3 +251,21 @@ render_table(
 )
 
 print("Saved: output/table_full.png")
+top_players = get_top_players(data["matches"][0])
+
+for position, player in enumerate(top_players[:3], start=1):
+    print(position, player["name"], player["kills"], player["damage"])
+print(player_day_stats(data))
+top_players = get_top_day_players(data)
+
+for name, stats in top_players[:3]:
+    print(name, stats["kills"], stats["damage"])
+match_data = get_match_mvp_data(data["matches"][4], 5)
+
+render_match_mvp(
+    match_data=match_data,
+    template_path="templates/match_mvp_blank.png",
+    output_path="output/match_mvp_test.png"
+)
+
+print("Saved: output/match_mvp_test.png")

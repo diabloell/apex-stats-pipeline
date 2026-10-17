@@ -8,3 +8,7 @@ __pycache__/
 data/*.json
 templates/*.psd
 output/
+assets/fonts/
+
+assets/players/
+assets/legends/
